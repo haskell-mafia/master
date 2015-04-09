@@ -1,0 +1,68 @@
+name:                  master
+version:               0.0.1
+license:               AllRightsReserved
+author:                Ambiata <info@ambiata.com>
+maintainer:            Ambiata <info@ambiata.com>
+copyright:             (c) 2015 Ambiata.
+synopsis:              master
+category:              System
+cabal-version:         >= 1.8
+build-type:            Custom
+description:           master.
+
+library
+  build-depends:
+                       base                            >= 3          && < 5
+                     , p
+                     , process                         == 1.2.*
+                     , text                            == 1.2.*
+                     , template-haskell
+
+  ghc-options:
+                       -Wall
+
+  hs-source-dirs:
+                       src
+
+
+  exposed-modules:
+                       Paths_master
+                       Master
+                       Master.Control
+                       Master.Data
+                       Master.TH
+
+
+executable             master
+    ghc-options:       -Wall -threaded -O2
+    main-is:           main/master.hs
+    build-depends:     base
+                     , master
+                     , optparse-applicative            == 0.11.*
+                     , p
+                     , text
+
+executable             master-version
+    ghc-options:       -Wall -threaded -O2
+    main-is:           main/master-version.hs
+    build-depends:     base
+                     , master
+
+test-suite test
+  type:                exitcode-stdio-1.0
+
+  main-is:             test.hs
+
+  ghc-options:         -Wall -threaded -O2
+
+  hs-source-dirs:
+                       test
+
+  build-depends:
+                       base                            >= 3          && < 5
+                     , master
+                     , orphanarium-core
+                     , p
+                     , text
+                     , QuickCheck                      == 2.7.*
+                     , quickcheck-instances            == 0.3.*
