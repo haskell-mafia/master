@@ -41,6 +41,7 @@ executable             master
                      , optparse-applicative            == 0.11.*
                      , p
                      , text
+                     , x-optparse
 
 test-suite test
   type:                exitcode-stdio-1.0
