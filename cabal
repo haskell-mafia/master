@@ -17,6 +17,7 @@ Commands:
     lint            Lint the project.
     init            Start a new project.
     update          Cabal update, but limited to retrieving at most once per day.
+    clean           Remove compiled artifacts.
 EOF
     exit ${status}
 }
@@ -41,23 +42,27 @@ project_name () {
 # brute force wins.
 #
 initialize () {
-    # submodules initialized if required, this could be conditional but no harm
-    # in just doing at this point.
-    git submodule init
-    git submodule sync
-    git submodule update
-
-    # sandbox initialized if required, this should support sandboxes in parent directories
-    [ -f cabal.sandbox.config ] || {
-        cabal sandbox init
-    }
-
     # sandbox has all sources
     project=$(project_name)
     [ ! -f "${project}.sandbox" ] || {
         SANDBOX="--sandbox $(cat ${project}.sandbox)"
     }
+
+    # sandbox initialized if required, this should support sandboxes in parent directories
+    [ -f cabal.sandbox.config ] || {
+        cabal sandbox ${SANDBOX:-} init
+    }
+
     [ ! -f "$project.submodules" ] || {
+        # submodules initialized if required, the "has it been done before" is pretty crude, but check is useful.
+        cat $project.submodules | while read submodule; do
+            find "$submodule" -maxdepth 2 -name \*.cabal
+        done | grep -q . || (
+            cd $(git rev-parse --show-toplevel)
+            git submodule init
+            git submodule update
+        )
+
         cat $project.submodules | while read submodule; do
             # ideally this would be conditional but yeh, stuff
             cabal sandbox add-source ${SANDBOX:-} "$submodule"
@@ -74,7 +79,7 @@ initialize () {
 #
 run_build () {
     initialize
-    cabal build
+    cabal build --ghc-option="-Werror"
 }
 
 #
@@ -98,7 +103,16 @@ run_repl () {
 #
 run_quick () {
     initialize
-    ghci -package-db=$(find .cabal-sandbox -name '*-packages.conf.d') -isrc -itest test/test.hs
+    [ $# -eq 1 ] || fail "Quick requires a single argument, specifying the entry point you want to load."
+    [ -f "$1" ] || fail "The entry point does not exist."
+    ghci -package-db=$(find .cabal-sandbox -name '*-packages.conf.d') -isrc -itest -idist/build/autogen "$1"
+}
+
+#
+# Remove compiled artifacts.
+#
+run_clean () {
+    cabal clean
 }
 
 #
@@ -147,7 +161,7 @@ run_init () {
 # Run cabal update, but not more often than once a day.
 #
 run_update () {
-    if test -f $HOME/.cabal/packages/hackage.haskell.org/00-index.cache || find $HOME/.cabal/packages/hackage.haskell.org/00-index.cache -type f -mtime +1 | grep -q 00-index; then
+    if ! test -f $HOME/.cabal/packages/hackage.haskell.org/00-index.cache || find $HOME/.cabal/packages/hackage.haskell.org/00-index.cache -type f -mtime +1 | grep -q 00-index; then
         cabal update
     else
         true
@@ -168,6 +182,6 @@ esac
 
 MODE="$1"; shift
 case "$MODE" in
-build|test|repl|quick|demo|exec|tags|lint|init|update) run_$MODE "$@" ;;
+build|test|repl|quick|demo|exec|tags|lint|init|update|clean) run_$MODE "$@" ;;
 *) fail "Unknown mode: $MODE"
 esac

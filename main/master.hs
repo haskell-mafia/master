@@ -1,12 +1,10 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-import           Master
-import           Master.TH
+import           BuildInfo_master
 
 import           Data.String (String)
 
 import           Options.Applicative
-import           Options.Applicative.Types
 
 import           P
 
@@ -26,7 +24,7 @@ main = do
   dispatch master >>= \sc ->
     case sc of
       VersionCommand ->
-        (putStrLn $ "master: " <> gitVersion) >> exitSuccess
+        (putStrLn $ "master: " <> buildInfoVersion) >> exitSuccess
       BuildCommand ->
         putStrLn "not-implemented" >> exitFailure
 
