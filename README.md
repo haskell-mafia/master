@@ -18,12 +18,12 @@ Concepts
 referencing a runner.
 
 `master` is a command line interface for building project, but reading
-the master configuration, grabbing the runner, seting up the build
+the master configuration, grabbing the runner, setting up the build
 environment, and then executing the runner with the environment.
 
 ### runners
 
-Any executable. It excepts no arguments, but will have access to
+Any executable. It accepts no arguments, but will have access to
 environment variables for this build.
 
 ### builds
