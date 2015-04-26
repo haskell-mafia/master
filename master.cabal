@@ -26,27 +26,22 @@ library
 
 
   exposed-modules:
-                       Paths_master
                        Master
                        Master.Control
                        Master.Data
-                       Master.TH
 
 
 executable             master
     ghc-options:       -Wall -threaded -O2
-    main-is:           main/master.hs
+    main-is:           master.hs
+    hs-source-dirs:    main
+                     , dist/build/autogen
     build-depends:     base
                      , master
                      , optparse-applicative            == 0.11.*
                      , p
                      , text
-
-executable             master-version
-    ghc-options:       -Wall -threaded -O2
-    main-is:           main/master-version.hs
-    build-depends:     base
-                     , master
+                     , x-optparse
 
 test-suite test
   type:                exitcode-stdio-1.0

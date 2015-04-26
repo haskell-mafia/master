@@ -1,18 +1,16 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-import           Master
-import           Master.TH
-
-import           Data.String (String)
+import           BuildInfo_master
 
 import           Options.Applicative
-import           Options.Applicative.Types
 
 import           P
 
 import           System.IO
 import           System.Exit (exitFailure, exitSuccess)
-import           System.Environment (getArgs)
+
+import           X.Options.Applicative
+
 
 data Command =
     VersionCommand
@@ -26,7 +24,7 @@ main = do
   dispatch master >>= \sc ->
     case sc of
       VersionCommand ->
-        (putStrLn $ "master: " <> gitVersion) >> exitSuccess
+        (putStrLn $ "master: " <> buildInfoVersion) >> exitSuccess
       BuildCommand ->
         putStrLn "not-implemented" >> exitFailure
 
@@ -47,14 +45,3 @@ versionP =
        short 'v'
     <> long "version"
     <> help "Display the version for the master executable."
-
---- FIX These should all go into optparse-extra ---
-
-command' :: String -> String -> Parser a -> Mod CommandFields a
-command' label description parser =
-  command label (info (parser <**> helper) (progDesc description))
-
-dispatch :: Parser a -> IO a
-dispatch p = getArgs >>= \x -> case x of
-  [] -> customExecParser (prefs showHelpOnError)  (info (p <**> helper) idm)
-  _  -> execParser (info (p <**> helper) idm)
