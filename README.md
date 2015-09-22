@@ -39,23 +39,31 @@ A complete example:
 runner = s3://ambiata-dist/master-haskell/$OS/$ARCH/master-haskell-ab12f1
 sha1 = abc123def
 
-[build.publish]
-   publish = true
-   versioner = dist/build/arm/arm-version
+[build.master]
+   PUBLISH = true
+   PUBLISH_BUCKET = ambiata-dist
+   HADDOCK = true
 
 [build.branches]
-   publish = false
+   PUBLISH = false
+
+[build.cabal]
+   runner = s3://ambiata-dist/master-haskell/$OS/$ARCH/haskell-cabal-ab12f1
+   sha1 = abc123def
+
 ```
 
 The `runner` attribute is mandatory. It is able to exploit the $OS and $ARCH
-variables for platform specific requests.
+variables for platform specific requests. It also is optional on the build
+level where it will overwrite the top level `runner`.
 
 The `sha1` is to specify the sha1 of the runner. It is optional but really
 should be set. If this is set, master will cache your runner, if it is not
 set your colleagues will probably not like you.
 
 Each `build.*` sub-section, defines a build name `*` and specifies a series
-of environment variables. Each subkey must be a string.
+of environment variables. Each subkey to be passed to the `runner` must
+ be a string in capitals.
 
 
 Implementation
