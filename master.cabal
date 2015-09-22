@@ -1,4 +1,4 @@
-name:                  master
+name:                  ambiata-master
 version:               0.0.1
 license:               AllRightsReserved
 author:                Ambiata <info@ambiata.com>
@@ -13,10 +13,9 @@ description:           master.
 library
   build-depends:
                        base                            >= 3          && < 5
-                     , p
+                     , ambiata-p
                      , process                         == 1.2.*
                      , text                            == 1.2.*
-                     , template-haskell
 
   ghc-options:
                        -Wall
@@ -37,11 +36,11 @@ executable             master
     hs-source-dirs:    main
                      , dist/build/autogen
     build-depends:     base
-                     , master
+                     , ambiata-master
+                     , ambiata-p
+                     , ambiata-x-optparse
                      , optparse-applicative            == 0.11.*
-                     , p
                      , text
-                     , x-optparse
 
 test-suite test
   type:                exitcode-stdio-1.0
@@ -55,9 +54,9 @@ test-suite test
 
   build-depends:
                        base                            >= 3          && < 5
-                     , master
-                     , orphanarium-core
-                     , p
+                     , ambiata-disorder-core
+                     , ambiata-master
+                     , ambiata-p
                      , text
                      , QuickCheck                      == 2.7.*
                      , quickcheck-instances            == 0.3.*
