@@ -5,3 +5,4 @@ module Master (
 
 import           Master.Data as X
 import           Master.Runner as X
+import           Master.Serial.Toml as X
