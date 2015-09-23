@@ -8,6 +8,8 @@ module Master.Data (
 
 import           Data.Text
 
+import           Mismi.S3
+
 import           P
 
 import           System.IO
@@ -27,8 +29,6 @@ data MasterJob =
   } deriving (Eq, Show)
 
 type Hash = Text
--- FIX Should be from mismi
-type Address = Text
 
 data MasterRunner =
     RunnerS3 Address (Maybe Hash)
