@@ -17,6 +17,7 @@ import           Control.Monad.Trans.Class
 import "cryptohash" Crypto.Hash as H
 
 import qualified Data.ByteString.Lazy as LBS
+import qualified Data.Map as M
 import           Data.Text
 import           Data.Text.Encoding
 import qualified Data.Text as T
@@ -37,7 +38,7 @@ import           System.Posix.Process
 import           System.FilePath
 
 -- root ~= "~/.master/cache"
-runner :: FilePath -> MasterRunner -> [(Text, Text)] -> EitherT RunnerError IO ()
+runner :: FilePath -> MasterRunner -> MasterJobParams -> EitherT RunnerError IO ()
 runner root run env = do
   f <- getFile root run
   lift $ exec f env
@@ -66,10 +67,10 @@ download root addr = do
     liftIO $ renameFile f $ out
     pure out
 
-exec :: FilePath -> [(Text, Text)] -> IO a
+exec :: FilePath -> MasterJobParams -> IO a
 exec cmd m = do
   e <- getEnvironment
-  let env = e <> fmap (bimap unpack unpack) m
+  let env = e <> fmap (bimap unpack unpack) (M.toList m)
   executeFile cmd False [] $ Just env
 
 data RunnerError =

@@ -1,0 +1,18 @@
+#!/bin/sh -eu
+
+MASTER=${1:-./dist/build/master/master}
+DIR=$(dirname $0)
+
+$MASTER -v
+$MASTER --version
+
+MASTER="$MASTER --dry-run"
+
+for f in $(ls $DIR/examples); do
+  f="${DIR}/examples/${f}"
+  $MASTER build -f ${f}
+  for b in $($MASTER list -f ${f}); do
+    $MASTER build -f ${f} ${b}
+  done
+  if $MASTER build -f ${f} "badbuild"; then exit 1; fi
+done
