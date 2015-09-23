@@ -70,3 +70,22 @@ test-suite test
                      , text
                      , QuickCheck                      == 2.7.*
                      , quickcheck-instances            == 0.3.*
+
+test-suite test-io
+  type:                exitcode-stdio-1.0
+
+  main-is:             test-io.hs
+
+  ghc-options:         -Wall -threaded -O2
+
+  hs-source-dirs:
+                       test
+
+  build-depends:
+                       base                            >= 3          && < 5
+                     , ambiata-disorder-core
+                     , ambiata-master
+                     , ambiata-p
+                     , text
+                     , QuickCheck                      == 2.7.*
+                     , quickcheck-instances            == 0.3.*
