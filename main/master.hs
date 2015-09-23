@@ -2,11 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 import           BuildInfo_ambiata_master
 
+import           Control.Monad.Trans.Either
+
 import           Data.Text (pack)
 
-import           Options.Applicative
-
 import           Master
+
+import           Options.Applicative
 
 import           P
 import qualified Prelude as PE
@@ -34,7 +36,8 @@ main = do
       (putStrLn $ "master: " <> buildInfoVersion) >> exitSuccess
     RunCommand DryRun c ->
       print c >> exitFailure
-    RunCommand RealRun (BuildCommand _) ->
+    RunCommand RealRun (BuildCommand _) -> do
+      _ <- orDie masterLoadErrorRender . EitherT $ loadMasterConfigToml "master.toml"
       orDie renderRunnerError $ runner cache PE.undefined PE.undefined
 
 commandP :: Parser Command

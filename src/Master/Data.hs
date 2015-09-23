@@ -6,8 +6,11 @@ module Master.Data (
   , MasterRunner (..)
   , MasterExecutable (..)
   , JobName (..)
+  , MasterJobParams
+  , Hash
   ) where
 
+import           Data.Map
 import           Data.Text
 
 import           Mismi.S3
@@ -19,7 +22,7 @@ import           System.FilePath
 newtype JobName =
   JobName {
       jobName :: Text
-    } deriving (Eq, Show)
+    } deriving (Eq, Ord, Show)
 
 newtype MasterExecutable =
   MasterExecutable {
@@ -29,16 +32,16 @@ newtype MasterExecutable =
 data MasterConfig =
   MasterConfig {
     masterRunner :: MasterRunner
-  , masterJobs :: [MasterJob]
+  , masterJobs :: Map JobName MasterJob
   } deriving (Eq, Show)
 
 data MasterJob =
   MasterJob {
-    masterJobName :: JobName
-  , masterJobRunner :: Maybe MasterRunner
-  , masterJobParams :: [(Text, Text)]
+    masterJobRunner :: Maybe MasterRunner
+  , masterJobParams :: MasterJobParams
   } deriving (Eq, Show)
 
+type MasterJobParams = Map Text Text
 type Hash = Text
 
 data MasterRunner =
