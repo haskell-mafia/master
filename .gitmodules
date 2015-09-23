@@ -7,3 +7,6 @@
 [submodule "lib/disorder"]
 	path = lib/disorder
 	url = git@github.com:ambiata/disorder.hs.git
+[submodule "lib/mismi"]
+	path = lib/mismi
+	url = git@github.com:ambiata/mismi

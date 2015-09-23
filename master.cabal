@@ -14,6 +14,7 @@ library
   build-depends:
                        base                            >= 3          && < 5
                      , ambiata-p
+                     , ambiata-mismi-s3
                      , process                         == 1.2.*
                      , text                            == 1.2.*
 
@@ -39,6 +40,8 @@ executable             master
                      , ambiata-master
                      , ambiata-p
                      , ambiata-x-optparse
+                     , ambiata-mismi-core
+                     , ambiata-mismi-s3
                      , optparse-applicative            == 0.11.*
                      , text
 
