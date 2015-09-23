@@ -4,6 +4,7 @@ module Master.Data (
     MasterConfig (..)
   , MasterJob (..)
   , MasterRunner (..)
+  , JobName (..)
   ) where
 
 import           Data.Text
@@ -15,6 +16,11 @@ import           P
 import           System.IO
 
 
+newtype JobName =
+  JobName {
+      jobName :: Text
+    } deriving (Eq, Show)
+
 data MasterConfig =
   MasterConfig {
     masterRunner :: MasterRunner
@@ -23,7 +29,7 @@ data MasterConfig =
 
 data MasterJob =
   MasterJob {
-    masterJobName :: Text
+    masterJobName :: JobName
   , masterJobRunner :: Maybe MasterRunner
   , masterJobParams :: [(Text, Text)]
   } deriving (Eq, Show)
