@@ -4,6 +4,7 @@ module Master.Data (
     MasterConfig (..)
   , MasterJob (..)
   , MasterRunner (..)
+  , MasterExecutable (..)
   , JobName (..)
   ) where
 
@@ -13,12 +14,16 @@ import           Mismi.S3
 
 import           P
 
-import           System.IO
-
+import           System.FilePath
 
 newtype JobName =
   JobName {
       jobName :: Text
+    } deriving (Eq, Show)
+
+newtype MasterExecutable =
+  MasterExecutable {
+      executable :: FilePath
     } deriving (Eq, Show)
 
 data MasterConfig =
