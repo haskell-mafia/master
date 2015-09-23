@@ -117,7 +117,7 @@ initialize () {
     done
 
     # all dependencies installed, and configure been run?
-    cabal install -j --only-dependencies --force-reinstalls --enable-tests --enable-benchmarks --reorder-goals --max-backjumps=-1
+    cabal install -j --only-dependencies --force-reinstalls --enable-tests --enable-benchmarks
     cabal configure --enable-tests --enable-benchmarks $CABAL_CONFIG_ARGS
 }
 
@@ -418,4 +418,3 @@ case "$MODE" in
 build|test|testci|bench|repl|quick|tags|lint|update|clean|depend|watch|upgrade) run_$MODE "$@" ;;
 *) fail "Unknown mode: $MODE"
 esac
-# Version: 251a5c9bb450aaf874b3281bd3a78872f3179694
