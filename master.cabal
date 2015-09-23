@@ -85,6 +85,8 @@ test-suite test-io
                        base                            >= 3          && < 5
                      , ambiata-disorder-core
                      , ambiata-master
+                     , ambiata-mismi-core-test
+                     , ambiata-mismi-s3-test
                      , ambiata-p
                      , text
                      , QuickCheck                      == 2.7.*

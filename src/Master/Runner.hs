@@ -14,7 +14,7 @@ import           Control.Monad.Trans.Either
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Class
 
-import "cryptohash" Crypto.Hash.SHA1 as H
+import "cryptohash" Crypto.Hash as H
 
 import qualified Data.ByteString.Lazy as LBS
 import           Data.Text
@@ -57,13 +57,14 @@ getFile root mr = case mr of
 download :: FilePath -> Address -> EitherT RunnerError IO FilePath
 download root addr = do
   r <- bimapEitherT AwsEnvError id . EitherT $ discoverAWSEnv
-  bimapEitherT (AwsError addr) id . runAWST r $ withSystemTempFile "master" $ \f h -> do
-    liftIO $ hClose h
+  bimapEitherT (AwsError addr) id . runAWST r $ withSystemTempDirectory "master" $ \d -> do
+    let f = d </> "master"
     S3.download addr f
     bs <- liftIO $ LBS.readFile f
-    let sha = H.hashlazy bs
-    liftIO $ renameFile f $ root </> (T.unpack $ decodeUtf8 sha)
-    pure f
+    let sha = H.digestToHexByteString $ (H.hashlazy bs :: Digest SHA1)
+        out = root </> (T.unpack $ decodeUtf8 sha)
+    liftIO $ renameFile f $ out
+    pure out
 
 exec :: FilePath -> [(Text, Text)] -> IO a
 exec cmd m = do
