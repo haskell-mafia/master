@@ -1,0 +1,12 @@
+runner = "path/to/runner"
+
+[build.one]
+  PUBLISH = "true"
+
+[build.two]
+  PUBLISH = "false"
+
+[build.three]
+  runner = "path/to/runner"
+
+[build.four]

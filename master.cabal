@@ -43,9 +43,9 @@ library
 
   exposed-modules:
                        Master
-                       Master.Control
                        Master.Data
                        Master.Runner
+                       Master.Serial
                        Master.Serial.Toml
 
 
@@ -60,6 +60,7 @@ executable             master
                      , ambiata-x-optparse
                      , ambiata-mismi-core
                      , ambiata-mismi-s3
+                     , containers
                      , either
                      , filepath                        == 1.3.*
                      , directory                       == 1.2.*
@@ -82,6 +83,7 @@ test-suite test
                      , ambiata-master
                      , ambiata-mismi-s3-test
                      , ambiata-p
+                     , containers
                      , text
                      , QuickCheck                      == 2.7.*
                      , quickcheck-instances            == 0.3.*
@@ -113,3 +115,12 @@ test-suite test-io
                      , transformers                    >= 0.3        && < 0.5
                      , QuickCheck                      == 2.7.*
                      , quickcheck-instances            == 0.3.*
+
+test-suite test-cli
+  type:                exitcode-stdio-1.0
+  ghc-options:         -Wall -fno-warn-missing-signatures
+  hs-source-dirs:      test
+  main-is:             test-cli.hs
+  build-depends:       base                            >= 3          && < 5
+                     , ambiata-disorder-core
+                     , ambiata-master

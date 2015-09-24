@@ -2,7 +2,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Master.Serial.Toml (
-    loadMasterConfigToml
+    MasterLoadError (..)
+  , loadMasterConfigToml
   , masterConfigFromToml
   , masterConfigToToml
   , masterLoadErrorRender
