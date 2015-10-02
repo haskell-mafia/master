@@ -1,3 +1,4 @@
 [master]
+version = 1
 runner = "s3://path/to/runner"
 hash = "1234"

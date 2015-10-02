@@ -37,6 +37,7 @@ A complete example:
 
 ```
 [master]
+   version = 1
    runner = "s3://ambiata-dist/master-haskell/$OS/$ARCH/master-haskell-ab12f1"
    sha1 = "abc123def"
 
@@ -53,6 +54,9 @@ A complete example:
       sha1 = "abc123def"
 
 ```
+
+The `version` attribute is mandatory. It is to allow non-backwards compatible
+changes to the format without breaking older projects.
 
 The `runner` attribute is mandatory. It is able to exploit the $OS and $ARCH
 variables for platform specific requests. It also is optional on the build

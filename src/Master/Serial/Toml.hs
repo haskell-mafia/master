@@ -35,6 +35,8 @@ data MasterLoadError =
 data MasterFromError =
     MissingRunner
   | InvalidNodeType Text
+  | UnknownVersion Int64
+  | MissingVersion
   deriving (Eq, Show)
 
 
@@ -48,9 +50,16 @@ loadMasterConfigToml fp = do
 masterConfigFromToml :: Table -> Either MasterFromError MasterConfig
 masterConfigFromToml t' = do
   (m, t) <- splitMasterFromBuild t'
-  MasterConfig
-    <$> ((=<<) (maybeToRight MissingRunner) . masterRunnerFromToml) m
-    <*> masterJobsFromToml t
+  case HM.lookup "version" m of
+    Just (NTValue (VInteger 1)) ->
+      MasterConfig
+        <$> ((=<<) (maybeToRight MissingRunner) . masterRunnerFromToml) m
+        <*> masterJobsFromToml t
+    Just (NTValue (VInteger v)) ->
+      Left $ UnknownVersion v
+    _ ->
+      Left $ MissingVersion
+
 
 splitMasterFromBuild :: Table -> Either MasterFromError (Table, Table)
 splitMasterFromBuild t =
@@ -102,13 +111,14 @@ masterConfigToToml (MasterConfig r j) =
     HM.singleton "build" (NTable . HM.fromList . fmap (bimap jobName (NTable . masterJobToToml)) . M.toList $ j)
 
 masterRunnerToToml :: MasterRunner -> Table
-masterRunnerToToml = HM.fromList . \case
+masterRunnerToToml = HM.fromList . (<>) [version] . \case
   RunnerPath v ->
     pure ("runner", vstring $ T.pack v)
   RunnerS3 a h ->
     ("runner", vstring $ addressToText a) : (maybeToList . fmap ((,) "sha" . vstring)) h
   where
     vstring = NTValue . VString
+    version = ("version", NTValue $ VInteger currentVersion)
 
 masterJobToToml :: MasterJob -> Table
 masterJobToToml (MasterJob r p) =
@@ -126,6 +136,11 @@ masterFromErrorRender :: MasterFromError -> Text
 masterFromErrorRender = \case
   MissingRunner -> "The 'runner' field is mandatory"
   InvalidNodeType t -> "The TOML type of '"  <> t <> "' is invalid, must be a string"
+  UnknownVersion v -> "The master.version '" <> (T.pack . show) v <> "' is not supported'"
+  MissingVersion -> "The master.version attribute is mandatory - the latest version is '" <> (T.pack . show) currentVersion <> "'"
+
+currentVersion :: Int64
+currentVersion = 1
 
 masterKey :: Text
 masterKey = "master"
