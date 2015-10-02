@@ -3,7 +3,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Master.Serial.Toml (
     MasterLoadError (..)
+  , MasterConfig' (..)
+  , MasterJob (..)
   , loadMasterConfigToml
+  , masterJobSelect
   , masterConfigFromToml
   , masterConfigToToml
   , masterLoadErrorRender
@@ -27,39 +30,59 @@ import           Text.Toml
 import           Text.Toml.Types
 
 
+-- | An intermediate representation just for parsing the master configuration
+data MasterConfig' =
+  MasterConfig' {
+    masterRunner' :: Maybe MasterRunner
+  , masterJobs :: M.Map JobName MasterJob
+  } deriving (Eq, Show)
+
+data MasterJob =
+  MasterJob {
+    masterJobRunner :: Maybe MasterRunner
+  , masterJobParams :: MasterJobParams
+  } deriving (Eq, Show)
+
 data MasterLoadError =
     MasterParseError FilePath ParseError
   | MasterFromError MasterFromError
   deriving (Eq, Show)
 
 data MasterFromError =
-    MissingRunner
+    MissingJob (Maybe JobName)
   | InvalidNodeType Text
   | UnknownVersion Int64
   | MissingVersion
   deriving (Eq, Show)
 
 
-loadMasterConfigToml :: FilePath -> IO (Either MasterLoadError MasterConfig)
-loadMasterConfigToml fp = do
+masterJobSelect :: Maybe JobName -> MasterConfig' -> Maybe MasterConfig
+masterJobSelect mjn (MasterConfig' mr mjs) =
+  uncurry MasterConfig <$> maybe (flip (,) M.empty <$> mr) (\jn ->
+    (\(MasterJob mr' mj) -> flip (,) mj <$> (mr' <|> mr)) =<< M.lookup jn mjs
+    ) mjn
+
+loadMasterConfigToml :: FilePath -> Maybe JobName -> IO (Either MasterLoadError MasterConfig)
+loadMasterConfigToml fp jn = do
   t <- T.readFile fp
   pure
-    . either (Left . MasterParseError fp) (first MasterFromError . masterConfigFromToml)
+    . either
+      (Left . MasterParseError fp)
+      (first MasterFromError . (=<<) (maybeToRight (MissingJob jn) . masterJobSelect jn) . masterConfigFromToml)
     $ parseTomlDoc fp t
 
-masterConfigFromToml :: Table -> Either MasterFromError MasterConfig
+masterConfigFromToml :: Table -> Either MasterFromError MasterConfig'
 masterConfigFromToml t' = do
   (m, t) <- splitMasterFromBuild t'
   case HM.lookup "version" m of
     Just (NTValue (VInteger 1)) ->
-      MasterConfig
-        <$> ((=<<) (maybeToRight MissingRunner) . masterRunnerFromToml) m
+      MasterConfig'
+        <$> masterRunnerFromToml m
         <*> masterJobsFromToml t
     Just (NTValue (VInteger v)) ->
       Left $ UnknownVersion v
     _ ->
       Left $ MissingVersion
-
 
 splitMasterFromBuild :: Table -> Either MasterFromError (Table, Table)
 splitMasterFromBuild t =
@@ -105,9 +128,9 @@ masterJobFromToml t = do
     (NTValue (VString v')) -> Right (k, v')
     _ -> Left $ InvalidNodeType k
 
-masterConfigToToml :: MasterConfig -> Table
-masterConfigToToml (MasterConfig r j) =
-  (HM.singleton masterKey . NTable . (versionTable <>) . masterRunnerToToml) r <>
+masterConfigToToml :: MasterConfig' -> Table
+masterConfigToToml (MasterConfig' r j) =
+  (HM.singleton masterKey . NTable . (versionTable <>) . maybe HM.empty masterRunnerToToml) r <>
     HM.singleton "build" (NTable . HM.fromList . fmap (bimap jobName (NTable . masterJobToToml)) . M.toList $ j)
 
 masterRunnerToToml :: MasterRunner -> Table
@@ -136,7 +159,8 @@ masterLoadErrorRender = \case
 
 masterFromErrorRender :: MasterFromError -> Text
 masterFromErrorRender = \case
-  MissingRunner -> "The 'runner' field is mandatory"
+  MissingJob Nothing -> "Master build not specified and no default found"
+  MissingJob (Just m) -> "Master build '" <> jobName m <> "' not found"
   InvalidNodeType t -> "The TOML type of '"  <> t <> "' is invalid, must be a string"
   UnknownVersion v -> "The master.version '" <> (T.pack . show) v <> "' is not supported'"
   MissingVersion -> "The master.version attribute is mandatory - the latest version is '" <> (T.pack . show) currentVersion <> "'"

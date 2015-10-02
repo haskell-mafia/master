@@ -3,13 +3,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Master.Data (
     MasterConfig (..)
-  , MasterJob (..)
   , MasterRunner (..)
   , MasterExecutable (..)
   , JobName (..)
   , MasterJobParams
   , Hash
-  , masterJobSelect
   , masterRunnerRender
   , masterJobParamsRender
   ) where
@@ -36,13 +34,7 @@ newtype MasterExecutable =
 data MasterConfig =
   MasterConfig {
     masterRunner :: MasterRunner
-  , masterJobs :: Map JobName MasterJob
-  } deriving (Eq, Show)
-
-data MasterJob =
-  MasterJob {
-    masterJobRunner :: Maybe MasterRunner
-  , masterJobParams :: MasterJobParams
+  , masterParams :: MasterJobParams
   } deriving (Eq, Show)
 
 type MasterJobParams = Map Text Text
@@ -53,12 +45,6 @@ data MasterRunner =
   | RunnerPath FilePath
   deriving (Eq, Show)
 
-
-masterJobSelect :: Maybe JobName -> MasterConfig -> Maybe (MasterRunner, MasterJobParams)
-masterJobSelect mjn (MasterConfig mr mjs) =
-  maybe (Just (mr, M.empty)) (\jn ->
-    (\(MasterJob mr' mj) -> (fromMaybe mr mr', mj)) <$> M.lookup jn mjs
-    ) mjn
 
 masterRunnerRender :: MasterRunner -> Text
 masterRunnerRender = \case

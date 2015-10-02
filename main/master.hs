@@ -35,8 +35,7 @@ main = do
     VersionCommand ->
       (putStrLn $ "master: " <> buildInfoVersion) >> exitSuccess
     RunCommand rt (BuildCommand mf mjn) -> do
-      mc <- orDie masterLoadErrorRender . EitherT $ loadMasterConfig mf
-      (mr, mp) <- orDie id . hoistEither . maybeToRight "Master build not found" $ masterJobSelect mjn mc
+      MasterConfig mr mp <- orDie masterLoadErrorRender . EitherT $ loadMasterConfig mf mjn
       case rt of
         DryRun ->
           putStrLn . T.unpack

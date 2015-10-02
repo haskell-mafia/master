@@ -58,9 +58,10 @@ A complete example:
 The `version` attribute is mandatory. It is to allow non-backwards compatible
 changes to the format without breaking older projects.
 
-The `runner` attribute is mandatory. It is able to exploit the $OS and $ARCH
-variables for platform specific requests. It also is optional on the build
-level where it will overwrite the top level `runner`.
+The `runner` attribute is mandatory, either at the top-level or on each build
+level. The `runner` can still be overridden by a `build` even if specified at
+the top level.
+It is able to exploit the $OS and $ARCH variables for platform specific requests.
 
 The `sha1` is to specify the sha1 of the runner. It is optional but really
 should be set. If this is set, master will cache your runner, if it is not

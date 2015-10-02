@@ -13,6 +13,6 @@ import           P
 import           System.IO
 
 
-loadMasterConfig :: Maybe FilePath -> IO (Either MasterLoadError MasterConfig)
-loadMasterConfig =
-  loadMasterConfigToml . fromMaybe "master.toml"
+loadMasterConfig :: Maybe FilePath -> Maybe JobName -> IO (Either MasterLoadError MasterConfig)
+loadMasterConfig fp =
+  loadMasterConfigToml (fromMaybe "master.toml" fp)
