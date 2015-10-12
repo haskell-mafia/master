@@ -25,7 +25,7 @@ import qualified Data.Text as T
 import           Master.Data
 
 import           Mismi
-import           Mismi.S3 (Address (..), Key (..))
+import           Mismi.S3 (Address)
 import qualified Mismi.S3 as S3
 
 import           P
@@ -35,9 +35,7 @@ import           System.Environment
 import           System.IO
 import           System.IO.Temp
 import           System.Posix.Process
-import           System.Posix.Unistd (getSystemID, systemName, machine)
 import           System.FilePath
-
 
 -- root ~= "~/.master/cache"
 runner :: FilePath -> MasterRunner -> MasterJobParams -> EitherT RunnerError IO ()
@@ -58,8 +56,7 @@ getFile root mr = case mr of
     download root add
 
 download :: FilePath -> Address -> EitherT RunnerError IO FilePath
-download root (Address b (Key k)) = do
-  addr <- liftIO . fmap (Address b . Key) $ replacePlatform k
+download root addr = do
   env <- bimapEitherT AwsRegionError id discoverAWSEnv
   bimapEitherT (AwsError addr) id . runAWS env $ withSystemTempDirectory "master" $ \d -> do
     let f = d </> "master"
@@ -75,15 +72,6 @@ exec cmd m = do
   e <- getEnvironment
   let env = e <> fmap (bimap unpack unpack) (M.toList m)
   executeFile cmd False [] $ Just env
-
-replacePlatform :: Text -> IO Text
-replacePlatform t = do
-  sid <- getSystemID
-  pure
-    . T.replace "$ARCH" (T.pack $ machine sid)
-    . T.replace "$OS" (T.toLower . T.pack $ systemName sid)
-    $ t
-
 
 data RunnerError =
     MissingFile FilePath
