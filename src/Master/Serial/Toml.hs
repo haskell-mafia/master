@@ -107,18 +107,20 @@ masterJobFromToml t = do
 
 masterConfigToToml :: MasterConfig -> Table
 masterConfigToToml (MasterConfig r j) =
-  HM.singleton masterKey (NTable $ masterRunnerToToml r) <>
+  (HM.singleton masterKey . NTable . (versionTable <>) . masterRunnerToToml) r <>
     HM.singleton "build" (NTable . HM.fromList . fmap (bimap jobName (NTable . masterJobToToml)) . M.toList $ j)
 
 masterRunnerToToml :: MasterRunner -> Table
-masterRunnerToToml = HM.fromList . (<>) [version] . \case
+masterRunnerToToml = HM.fromList . \case
   RunnerPath v ->
     pure ("runner", vstring $ T.pack v)
   RunnerS3 a h ->
     ("runner", vstring $ addressToText a) : (maybeToList . fmap ((,) "sha" . vstring)) h
   where
     vstring = NTValue . VString
-    version = ("version", NTValue $ VInteger currentVersion)
+
+versionTable :: Table
+versionTable = HM.singleton "version" . NTValue $ VInteger currentVersion
 
 masterJobToToml :: MasterJob -> Table
 masterJobToToml (MasterJob r p) =
