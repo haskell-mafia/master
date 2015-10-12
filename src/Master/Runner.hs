@@ -60,8 +60,8 @@ getFile root mr = case mr of
 download :: FilePath -> Address -> EitherT RunnerError IO FilePath
 download root (Address b (Key k)) = do
   addr <- liftIO . fmap (Address b . Key) $ replacePlatform k
-  r <- bimapEitherT AwsEnvError id . EitherT $ discoverAWSEnv
-  bimapEitherT (AwsError addr) id . runAWST r $ withSystemTempDirectory "master" $ \d -> do
+  env <- bimapEitherT AwsRegionError id discoverAWSEnv
+  bimapEitherT (AwsError addr) id . runAWS env $ withSystemTempDirectory "master" $ \d -> do
     let f = d </> "master"
     S3.download addr f
     bs <- liftIO $ LBS.readFile f
@@ -88,7 +88,7 @@ replacePlatform t = do
 data RunnerError =
     MissingFile FilePath
   | AwsError Address Error
-  | AwsEnvError EnvError
+  | AwsRegionError RegionError
   deriving (Show)
 
 renderRunnerError :: RunnerError -> Text
@@ -97,5 +97,5 @@ renderRunnerError r = case r of
     "RunnerLocal [" <> T.pack f <> "] does not exists."
   AwsError a e ->
     "Downloading runner [" <> S3.addressToText a <> "] failed - " <> errorRender e
-  AwsEnvError e ->
-    "Failed to retrieve environment: " <> envErrorRender e
+  AwsRegionError e ->
+    "Failed to retrieve environment: " <> renderRegionError e
