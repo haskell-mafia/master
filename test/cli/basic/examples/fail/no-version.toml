@@ -1,0 +1,5 @@
+[master]
+  runner = "path/to/runner"
+
+[build.one]
+  PUBLISH = "true"

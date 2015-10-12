@@ -1,0 +1,6 @@
+[master]
+  version = 99
+  runner = "path/to/runner"
+
+[build.one]
+  PUBLISH = "true"
