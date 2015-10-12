@@ -36,8 +36,9 @@ for the build.
 A complete example:
 
 ```
-runner = "s3://ambiata-dist/master-haskell/$OS/$ARCH/master-haskell-ab12f1"
-sha1 = "abc123def"
+[master]
+   runner = "s3://ambiata-dist/master-haskell/$OS/$ARCH/master-haskell-ab12f1"
+   sha1 = "abc123def"
 
 [build.master]
    PUBLISH = "true"
@@ -47,9 +48,9 @@ sha1 = "abc123def"
 [build.branches]
    PUBLISH = "false"
 
-[build.cabal]
-   runner = "s3://ambiata-dist/master-haskell/$OS/$ARCH/haskell-cabal-ab12f1"
-   sha1 = "abc123def"
+   [build.branches.master]
+      runner = "s3://ambiata-dist/master-haskell/$OS/$ARCH/haskell-cabal-ab12f1"
+      sha1 = "abc123def"
 
 ```
 

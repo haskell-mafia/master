@@ -1,1 +1,2 @@
+[master]
 runner = "path/to/runner"

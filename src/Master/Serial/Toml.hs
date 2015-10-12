@@ -45,16 +45,19 @@ loadMasterConfigToml fp = do
     . either (Left . MasterParseError fp) (first MasterFromError . masterConfigFromToml)
     $ parseTomlDoc fp t
 
--- FIX Is there a better way to ensure unambigious master keys? Case? Prefix with underscore?
-isMasterKey :: Text -> Bool
-isMasterKey =
-  flip elem ["runner", "sha"]
-
 masterConfigFromToml :: Table -> Either MasterFromError MasterConfig
-masterConfigFromToml t =
+masterConfigFromToml t' = do
+  (m, t) <- splitMasterFromBuild t'
   MasterConfig
-    <$> ((=<<) (maybeToRight MissingRunner) . masterRunnerFromToml) t
+    <$> ((=<<) (maybeToRight MissingRunner) . masterRunnerFromToml) m
     <*> masterJobsFromToml t
+
+splitMasterFromBuild :: Table -> Either MasterFromError (Table, Table)
+splitMasterFromBuild t =
+  flip (,) (HM.delete masterKey t) <$> case HM.lookup masterKey t of
+    Just (NTable m) -> Right m
+    Just _ -> Left $ InvalidNodeType masterKey
+    _ -> Right HM.empty
 
 masterRunnerFromToml :: Table -> Either MasterFromError (Maybe MasterRunner)
 masterRunnerFromToml t = do
@@ -77,10 +80,11 @@ masterJobsFromToml t = do
   case HM.lookupDefault (NTable HM.empty) "build" t of
     NTable bt' ->
       fmap (M.fromList . fmap (first JobName)) . for (HM.toList bt') $ \(k, v) -> (,) k <$> case v of
-        NTable bt ->
+        NTable bt'' -> do
+          (m, bt) <- splitMasterFromBuild bt''
           MasterJob
-            <$> masterRunnerFromToml bt
-            <*> (masterJobFromToml . HM.filterWithKey (const . not . isMasterKey)) bt
+            <$> masterRunnerFromToml m
+            <*> masterJobFromToml bt
         _ ->
           Left . InvalidNodeType $ "build." <> k
     _ ->
@@ -94,7 +98,7 @@ masterJobFromToml t = do
 
 masterConfigToToml :: MasterConfig -> Table
 masterConfigToToml (MasterConfig r j) =
-  masterRunnerToToml r <>
+  HM.singleton masterKey (NTable $ masterRunnerToToml r) <>
     HM.singleton "build" (NTable . HM.fromList . fmap (bimap jobName (NTable . masterJobToToml)) . M.toList $ j)
 
 masterRunnerToToml :: MasterRunner -> Table
@@ -108,7 +112,8 @@ masterRunnerToToml = HM.fromList . \case
 
 masterJobToToml :: MasterJob -> Table
 masterJobToToml (MasterJob r p) =
-  maybe HM.empty masterRunnerToToml r <> (HM.fromList . fmap (second vstring) . M.toList) p
+     maybe HM.empty (HM.singleton masterKey . NTable . masterRunnerToToml) r
+  <> (HM.fromList . fmap (second vstring) . M.toList) p
   where
     vstring = NTValue . VString
 
@@ -121,3 +126,6 @@ masterFromErrorRender :: MasterFromError -> Text
 masterFromErrorRender = \case
   MissingRunner -> "The 'runner' field is mandatory"
   InvalidNodeType t -> "The TOML type of '"  <> t <> "' is invalid, must be a string"
+
+masterKey :: Text
+masterKey = "master"
