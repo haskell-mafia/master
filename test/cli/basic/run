@@ -8,11 +8,19 @@ $MASTER --version
 
 MASTER="$MASTER --dry-run"
 
-for f in $(ls $DIR/examples); do
-  f="${DIR}/examples/${f}"
+for f in $(ls $DIR/examples/pass); do
+  f="${DIR}/examples/pass/${f}"
   $MASTER build -f ${f}
   for b in $($MASTER list -f ${f}); do
     $MASTER build -f ${f} ${b}
   done
   if $MASTER build -f ${f} "badbuild"; then exit 1; fi
+done
+
+for f in $(ls $DIR/examples/fail); do
+  f="${DIR}/examples/fail/${f}"
+  if $MASTER build -f ${f}; then
+    echo "No error when running ${f}"
+    exit 1
+  fi
 done
