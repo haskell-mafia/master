@@ -14,8 +14,8 @@ import           Data.Text as T
 import           Disorder.Core.IO
 import           Disorder.Corpus
 
-import           Master
-import qualified Mismi.S3 as S3
+import           Master as M
+import           Mismi.S3 as S3
 
 import           P
 
@@ -49,7 +49,16 @@ prop_get_file_s3_no_hash = forAll (elements weather) $ \s -> withLocalAWS $ \d a
 prop_download = forAll (elements southpark) $ \s -> withLocalAWS $ \d a -> do
   liftIO $ D.createDirectoryIfMissing True d
   S3.writeOrFail a s
-  r <- liftIO . runEitherT $ download d a
+  r <- liftIO . runEitherT $ M.download d a
+  z <- getValue r
+  pure $ z === s
+
+prop_download_os = forAll (elements southpark) $ \s -> withLocalAWS $ \d a -> do
+  liftIO $ D.createDirectoryIfMissing True d
+  -- Write out the two values we know are supported on our dev machines or on the build
+  S3.writeOrFail (withKey (</> Key "darwin-x86_64") a) s
+  S3.writeOrFail (withKey (</> Key "linux-x86_64") a) s
+  r <- liftIO . runEitherT $ M.download d $ withKey (</> Key "$OS-$ARCH") a
   z <- getValue r
   pure $ z === s
 
