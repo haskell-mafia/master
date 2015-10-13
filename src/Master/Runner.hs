@@ -66,6 +66,8 @@ download root addr = do
         out = root </> (T.unpack $ decodeUtf8 sha)
     liftIO $ createDirectoryIfMissing True root
     liftIO $ renameFile f $ out
+    p <- liftIO $ getPermissions out
+    liftIO . setPermissions out $ setOwnerExecutable True p
     pure out
 
 exec :: FilePath -> MasterJobParams -> IO a
