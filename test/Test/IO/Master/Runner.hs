@@ -21,7 +21,6 @@ import           P
 
 import           System.IO
 import           System.IO.Temp
-import qualified System.Directory as D
 import qualified System.FilePath as F
 
 import           Test.Mismi.Amazonka
@@ -40,14 +39,12 @@ prop_get_file_local t = testIO . withSystemTempDirectory "missing" $ \d -> do
   pure $ z === out
 
 prop_get_file_s3_no_hash = forAll (elements weather) $ \s -> withLocalAWS $ \d a -> do
-  liftIO $ D.createDirectoryIfMissing True d
   S3.writeOrFail a s
   r <- liftIO . runEitherT $ getFile d (RunnerS3 a Nothing)
   z <- getValue r
   pure $ z === s
 
 prop_download = forAll (elements southpark) $ \s -> withLocalAWS $ \d a -> do
-  liftIO $ D.createDirectoryIfMissing True d
   S3.writeOrFail a s
   r <- liftIO . runEitherT $ download d a
   z <- getValue r
