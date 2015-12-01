@@ -21,6 +21,9 @@ import qualified Data.Map as M
 import           Data.Text
 import           Data.Text.Encoding
 import qualified Data.Text as T
+import           Data.UUID
+import           Data.UUID.V4
+
 
 import           Master.Data
 
@@ -33,7 +36,6 @@ import           P
 import           System.Directory
 import           System.Environment
 import           System.IO
-import           System.IO.Temp
 import           System.Posix.Process
 import           System.FilePath
 
@@ -58,17 +60,18 @@ getFile root mr = case mr of
 download :: FilePath -> Address -> EitherT RunnerError IO FilePath
 download root addr = do
   env <- bimapEitherT AwsRegionError id discoverAWSEnv
-  bimapEitherT (AwsError addr) id . runAWS env $ withSystemTempDirectory "master" $ \d -> do
-    let f = d </> "master"
+  uuid <- liftIO nextRandom >>= return . toString
+  let f = root </> "master" <.> uuid
+  bimapEitherT (AwsError addr) id . runAWS env $
     S3.download addr f
-    bs <- liftIO $ LBS.readFile f
-    let sha = H.digestToHexByteString $ (H.hashlazy bs :: Digest SHA1)
-        out = root </> (T.unpack $ decodeUtf8 sha)
-    liftIO $ createDirectoryIfMissing True root
-    liftIO $ renameFile f $ out
-    p <- liftIO $ getPermissions out
-    liftIO . setPermissions out $ setOwnerExecutable True p
-    pure out
+  bs <- liftIO $ LBS.readFile f
+  let sha = H.digestToHexByteString $ (H.hashlazy bs :: Digest SHA1)
+      out = root </> (T.unpack $ decodeUtf8 sha)
+  liftIO $ createDirectoryIfMissing True root
+  liftIO $ renameFile f out
+  p <- liftIO $ getPermissions out
+  liftIO . setPermissions out $ setOwnerExecutable True p
+  pure out
 
 exec :: FilePath -> MasterJobParams -> IO a
 exec cmd m = do
