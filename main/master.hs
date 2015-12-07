@@ -35,9 +35,8 @@ main = do
     VersionCommand ->
       (putStrLn $ "master: " <> buildInfoVersion) >> exitSuccess
     RunCommand rt (BuildCommand mf mjn) -> do
-      shaOverride <- liftMaybe T.pack $ lookupEnv "MASTER_SHA"
-      runnerOverride <- liftMaybe (flip masterRunnerParse shaOverride . T.pack) $ lookupEnv "MASTER_RUNNER"
       MasterConfig mr mp <- orDie masterLoadErrorRender . EitherT $ loadMasterConfig mf mjn
+      runnerOverride <- liftMaybe (flip masterRunnerParse (sha mr) . T.pack) $ lookupEnv "MASTER_RUNNER"
       let mr' = maybe mr id runnerOverride
       case rt of
         DryRun ->
@@ -48,6 +47,9 @@ main = do
   where
     liftMaybe :: Functor f => (a -> b) -> f (Maybe a) -> f (Maybe b)
     liftMaybe g = fmap (maybe Nothing (Just . g))
+
+    sha (RunnerS3 _ h) = h
+    sha (RunnerPath _) = Nothing
 
 commandP :: Parser Command
 commandP = subparser buildP
