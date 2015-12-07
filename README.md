@@ -70,7 +70,7 @@ The `sha1` is to specify the sha1 of the runner. It is optional but really
 should be set. If this is set, master will cache your runner, if it is not
 set your colleagues will probably not like you.
 
-Each `build.*` sub-section, defines a build name `*` and specifies a series
+Each `build.*` sub-section defines a build name `*` and specifies a series
 of environment variables. Each subkey to be passed to the `runner` must
  be a string in capitals.
 
@@ -78,7 +78,7 @@ of environment variables. Each subkey to be passed to the `runner` must
 Implementation
 --------------
 
-The first cut should be extreamlly basic. It should:
+The first cut should be extremely basic. It should:
  - parse the config.
  - download the runner.
  - check the sha.
