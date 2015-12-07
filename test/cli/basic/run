@@ -26,3 +26,19 @@ for f in $(ls $DIR/examples/fail); do
     exit 1
   fi
 done
+
+export MASTER_RUNNER="s3://rennur/ot/htap"
+export MASTER_SHA="4321"
+
+for f in $(ls $DIR/examples/pass); do
+  f="${DIR}/examples/pass/${f}"
+  if echo "${f}" | grep -v "no-default"; then
+    $MASTER build -f ${f} | grep -qE "(${MASTER_RUNNER}.*${MASTER_SHA})"
+  fi
+  if echo "${f}" | grep -v "no-builds"; then
+    $MASTER build -f ${f} "one"
+  fi
+  if $MASTER build -f ${f} "badbuild"; then exit 1; fi
+done
+
+exit 0

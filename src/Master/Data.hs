@@ -8,6 +8,7 @@ module Master.Data (
   , JobName (..)
   , MasterJobParams
   , Hash
+  , masterRunnerParse
   , masterRunnerRender
   , masterJobParamsRender
   ) where
@@ -48,8 +49,13 @@ data MasterRunner =
 
 masterRunnerRender :: MasterRunner -> Text
 masterRunnerRender = \case
-  RunnerS3 a _ -> addressToText a
+  RunnerS3 a s -> addressToText a <> (" (" <> maybe "no hash" ("SHA: " <>) s <> ")")
   RunnerPath p -> T.pack p
+
+masterRunnerParse :: Text -> Maybe Hash -> MasterRunner
+masterRunnerParse r h = case addressFromText r of
+  Nothing -> RunnerPath $ T.unpack r
+  Just r' -> RunnerS3 r' h
 
 masterJobParamsRender :: MasterJobParams -> Text
 masterJobParamsRender =

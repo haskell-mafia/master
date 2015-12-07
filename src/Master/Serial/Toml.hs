@@ -93,17 +93,13 @@ splitMasterFromBuild t =
 
 masterRunnerFromToml :: Table -> Either MasterFromError (Maybe MasterRunner)
 masterRunnerFromToml t = do
-  for (HM.lookup "runner" t) $ \case
-    NTValue (VString v) ->
-      case addressFromText v of
-        Nothing ->
-          pure . RunnerPath $ T.unpack v
-        Just a -> do
-          h <- case HM.lookup "sha" $ t of
+  h <- case HM.lookup "sha" $ t of
             Nothing -> pure Nothing
             Just (NTValue (VString s)) -> pure $ Just s
             Just _ -> Left $ InvalidNodeType "sha"
-          pure $ RunnerS3 a h
+  for (HM.lookup "runner" t) $ \case
+    NTValue (VString v) ->
+      pure $ masterRunnerParse v h
     _ ->
       Left $ InvalidNodeType "runner"
 
