@@ -17,13 +17,13 @@ Concepts
 `master` is a configuration file definition for defining builds and
 referencing a runner.
 
-`master` is a command line interface for building project, but reading
+`master` is a command line interface for building a project, reading
 the master configuration, grabbing the runner, setting up the build
 environment, and then executing the runner with the environment.
 
 ### runners
 
-Any executable. It accepts no arguments, but will have access to
+Any executable. It accepts no arguments, but has access to
 environment variables for this build.
 
 ### builds
@@ -61,7 +61,7 @@ changes to the format without breaking older projects.
 The `runner` attribute is mandatory, either at the top-level or on each build
 level. The `runner` can still be overridden by a `build` even if specified at
 the top level.
-It is able to exploit the $OS and $ARCH variables for platform specific requests.
+It is able to exploit the `$OS` and `$ARCH` variables for platform specific requests.
 
 The `sha1` is to specify the sha1 of the runner. It is optional but really
 should be set. If this is set, master will cache your runner, if it is not
@@ -75,7 +75,7 @@ of environment variables. Each subkey to be passed to the `runner` must
 Implementation
 --------------
 
-The first cut should be extreamlly basic. It should:
+The first cut should be extremely basic. It should:
  - parse the config.
  - download the runner.
  - check the sha.
