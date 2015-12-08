@@ -17,7 +17,7 @@ Concepts
 `master` is a configuration file definition for defining builds and
 referencing a runner.
 
-`master` is a command line interface for building project, reading
+`master` is a command line interface for building a project, reading
 the master configuration, grabbing the runner, setting up the build
 environment, and then executing the runner with the environment.
 
