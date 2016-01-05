@@ -30,11 +30,16 @@ instance Arbitrary MasterConfig' where
           <*> arbitrary
       , MasterConfig'
           <$> pure Nothing
-          <*> (fmap M.fromList $ listOf1 (fmap (\(MasterJob r' p) -> MasterJob (Just $ fromMaybe r r') p) <$> arbitrary))
+          <*> (fmap M.fromList $ listOf1 (fmap (\(MasterJob' r' p) -> MasterJob' (Just $ fromMaybe r r') p) <$> arbitrary))
       ]
 
 instance Arbitrary MasterJob where
   arbitrary = MasterJob
+    <$> arbitrary
+    <*> arbitrary
+
+instance Arbitrary MasterJob' where
+  arbitrary = MasterJob'
     <$> arbitrary
     <*> arbitrary
 
