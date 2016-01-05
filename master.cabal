@@ -17,6 +17,7 @@ library
                      , ambiata-mismi-core
                      , ambiata-mismi-s3
                      , ambiata-x-htoml
+                     , clock                           == 0.5.*
                      , containers                      == 0.5.*
                      , either                          >= 4.3        && < 4.5
                      , htoml                           == 0.1.*
