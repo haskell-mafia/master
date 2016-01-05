@@ -4,10 +4,12 @@
 module Master.Data (
     MasterConfig (..)
   , MasterRunner (..)
+  , MasterJob (..)
   , MasterExecutable (..)
   , JobName (..)
   , MasterJobParams
   , Hash
+  , masterJobSelect
   , masterRunnerRender
   , masterJobParamsRender
   ) where
@@ -33,8 +35,14 @@ newtype MasterExecutable =
 
 data MasterConfig =
   MasterConfig {
-    masterRunner :: MasterRunner
-  , masterParams :: MasterJobParams
+    masterRunner :: Maybe MasterRunner
+  , masterJobs :: Map JobName MasterJob
+  } deriving (Eq, Show)
+
+data MasterJob =
+  MasterJob {
+    masterJobRunner :: MasterRunner
+  , masterJobParams :: MasterJobParams
   } deriving (Eq, Show)
 
 type MasterJobParams = Map Text Text
@@ -45,6 +53,12 @@ data MasterRunner =
   | RunnerPath FilePath
   deriving (Eq, Show)
 
+
+masterJobSelect :: Maybe JobName -> MasterConfig -> Maybe (MasterRunner, MasterJobParams)
+masterJobSelect mjn (MasterConfig mr mjs) =
+  maybe (fmap (flip (,) M.empty) mr) (\jn ->
+    (\(MasterJob mr' mj) -> (mr', mj)) <$> M.lookup jn mjs
+    ) mjn
 
 masterRunnerRender :: MasterRunner -> Text
 masterRunnerRender = \case

@@ -5,6 +5,7 @@ DIR=$(dirname $0)
 
 $MASTER -v
 $MASTER --version
+$MASTER list
 
 MASTER="$MASTER --dry-run"
 
