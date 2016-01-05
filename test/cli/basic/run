@@ -1,16 +1,16 @@
-#!/bin/sh -eu
+#!/bin/sh -eux
 
 MASTER=${1:-./dist/build/master/master}
 DIR=$(dirname $0)
 
 $MASTER -v
 $MASTER --version
-$MASTER list
 
 MASTER="$MASTER --dry-run"
 
 for f in $(ls $DIR/examples/pass); do
   f="${DIR}/examples/pass/${f}"
+  $MASTER list -f ${f}
   if echo "${f}" | grep -v "no-default"; then
     $MASTER build -f ${f}
   fi
