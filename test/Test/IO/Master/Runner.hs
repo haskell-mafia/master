@@ -6,9 +6,7 @@
 module Test.IO.Master.Runner where
 
 import           Control.Monad.IO.Class
-import           Control.Monad.Trans.Either
 
-import           Data.Either.Combinators (mapLeft)
 import           Data.Text as T
 
 import           Disorder.Core.IO
@@ -23,13 +21,16 @@ import           System.IO
 import           System.IO.Temp
 import qualified System.FilePath as F
 
-import           Test.Mismi.Amazonka
+import           Test.Mismi (testAWS)
+import           Test.Mismi.S3 (newFilePath, newAddress)
 import           Test.QuickCheck
 import           Test.QuickCheck.Instances ()
 
+import           X.Control.Monad.Trans.Either (runEitherT)
+
 prop_get_file_missing = testIO . withSystemTempDirectory "missing" $ \d -> do
   x <- runEitherT (getFile d (RunnerPath d))
-  pure $ (mapLeft renderRunnerError x) === (mapLeft renderRunnerError (Left $ MissingFile d))
+  pure $ (first renderRunnerError x) === (first renderRunnerError (Left $ MissingFile d))
 
 prop_get_file_local t = testIO . withSystemTempDirectory "missing" $ \d -> do
   let out = d F.</> "master"
@@ -38,13 +39,17 @@ prop_get_file_local t = testIO . withSystemTempDirectory "missing" $ \d -> do
   z <- getFilePath r
   pure $ z === out
 
-prop_get_file_s3_no_hash = forAll (elements weather) $ \s -> withLocalAWS $ \d a -> do
+prop_get_file_s3_no_hash = forAll (elements weather) $ \s -> testAWS $ do
+  d <- newFilePath
+  a <- newAddress
   S3.writeOrFail a s
   r <- liftIO . runEitherT $ getFile d (RunnerS3 a Nothing)
   z <- getValue r
   pure $ z === s
 
-prop_download = forAll (elements southpark) $ \s -> withLocalAWS $ \d a -> do
+prop_download = forAll (elements southpark) $ \s -> testAWS $ do
+  d <- newFilePath
+  a <- newAddress
   S3.writeOrFail a s
   r <- liftIO . runEitherT $ download d a
   z <- getValue r
