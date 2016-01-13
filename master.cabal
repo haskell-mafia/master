@@ -41,7 +41,6 @@ library
 
 
   exposed-modules:
-                       BuildInfo_ambiata_master
                        Master
                        Master.Data
                        Master.Runner
@@ -51,7 +50,8 @@ library
 
 executable             master
     ghc-options:       -Wall -threaded -O2
-    main-is:           main/master.hs
+    main-is:           ../main/master.hs
+    hs-source-dirs:    gen
     build-depends:     base
                      , ambiata-master
                      , ambiata-p
