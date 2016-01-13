@@ -84,7 +84,7 @@ test-suite test
                      , ambiata-p
                      , containers
                      , text
-                     , QuickCheck                      == 2.7.*
+                     , QuickCheck                      == 2.8.*
                      , quickcheck-instances            == 0.3.*
 
 test-suite test-io
@@ -112,7 +112,7 @@ test-suite test-io
                      , temporary                       == 1.2.*
                      , text
                      , transformers                    >= 0.3        && < 0.5
-                     , QuickCheck                      == 2.7.*
+                     , QuickCheck                      == 2.8.*
                      , quickcheck-instances            == 0.3.*
 
 test-suite test-cli
