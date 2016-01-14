@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PackageImports #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
 module Master.Runner (
     RunnerError (..)
   , runner
@@ -10,7 +10,6 @@ module Master.Runner (
   , renderRunnerError
   ) where
 
-import           Control.Monad.Trans.Either
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Class
 
@@ -28,7 +27,7 @@ import           Data.UUID.V4
 import           Master.Data
 
 import           Mismi
-import           Mismi.S3 (Address)
+import           Mismi.S3 (Address, DownloadError)
 import qualified Mismi.S3 as S3
 
 import           P
@@ -38,6 +37,8 @@ import           System.Environment
 import           System.IO
 import           System.Posix.Process
 import           System.FilePath
+
+import           X.Control.Monad.Trans.Either (EitherT, left, bimapEitherT, firstEitherT)
 
 -- root ~= "~/.master/cache"
 runner :: FilePath -> MasterRunner -> MasterJobParams -> EitherT RunnerError IO ()
@@ -62,7 +63,7 @@ download root addr = do
   env <- bimapEitherT AwsRegionError id discoverAWSEnv
   uuid <- liftIO nextRandom >>= return . toString
   let f = root </> "master" <.> uuid
-  bimapEitherT (AwsError addr) id . runAWS env $
+  runAWST env (AwsError addr) . firstEitherT (DownloadError addr) $
     S3.download addr f
   bs <- liftIO $ LBS.readFile f
   let sha = H.digestToHexByteString $ (H.hashlazy bs :: Digest SHA1)
@@ -82,6 +83,7 @@ exec cmd m = do
 data RunnerError =
     MissingFile FilePath
   | AwsError Address Error
+  | DownloadError Address DownloadError
   | AwsRegionError RegionError
   deriving (Show)
 
@@ -90,6 +92,8 @@ renderRunnerError r = case r of
   MissingFile f ->
     "RunnerLocal [" <> T.pack f <> "] does not exists."
   AwsError a e ->
-    "Downloading runner [" <> S3.addressToText a <> "] failed - " <> errorRender e
+    "Downloading runner [" <> S3.addressToText a <> "] failed - " <> renderError e
+  DownloadError a e ->
+    "Downloading runner [" <> S3.addressToText a <> "] failed - " <> S3.renderDownloadError e
   AwsRegionError e ->
     "Failed to retrieve environment: " <> renderRegionError e

@@ -1,8 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 import           BuildInfo_ambiata_master
-
-import           Control.Monad.Trans.Either
 
 import           Data.Text as T
 
@@ -18,6 +17,8 @@ import           System.Environment
 import           System.Exit (exitSuccess)
 import           System.IO
 
+import           X.Control.Monad.Trans.Either (pattern EitherT)
+import           X.Control.Monad.Trans.Either.Exit (orDie)
 import           X.Options.Applicative
 
 data Command =
