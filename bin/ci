@@ -3,4 +3,4 @@
 $(dirname $0)/ci.branches
 
 VERSION=$(cat $(dirname $0)/../gen/version.txt)
-aws s3 --region=ap-southeast-2 cp dist/build/master/master s3://ambiata-dist/master/linux/x86_64/$VERSION/master-$VERSION
+aws s3 --region=ap-southeast-2 cp dist/build/master/master ${AMBIATA_ARTEFACTS_MASTER}/master/linux/x86_64/$VERSION/master-$VERSION
