@@ -37,12 +37,20 @@ main = do
       (putStrLn $ "master: " <> buildInfoVersion) >> exitSuccess
     RunCommand rt (BuildCommand mf mjn) -> do
       MasterConfig mr mp <- orDie masterLoadErrorRender . EitherT $ loadMasterConfig mf mjn
+      runnerOverride <- liftMaybe (flip masterRunnerParse (sha mr) . T.pack) $ lookupEnv "MASTER_RUNNER"
+      let mr' = maybe mr id runnerOverride
       case rt of
         DryRun ->
           putStrLn . T.unpack
-            $ "Found runner [" <> masterRunnerRender mr <> "] with parameters [" <> masterJobParamsRender mp <> "]"
+            $ "Found runner [" <> masterRunnerRender mr' <> "] with parameters [" <> masterJobParamsRender mp <> "]"
         RealRun ->
-          orDie renderRunnerError $ runner cache mr mp
+          orDie renderRunnerError $ runner cache mr' mp
+  where
+    liftMaybe :: Functor f => (a -> b) -> f (Maybe a) -> f (Maybe b)
+    liftMaybe g = fmap (maybe Nothing (Just . g))
+
+    sha (RunnerS3 _ h) = h
+    sha (RunnerPath _) = Nothing
 
 commandP :: Parser Command
 commandP = subparser buildP
