@@ -69,9 +69,9 @@ download root addr = do
   let sha = H.digestToHexByteString $ (H.hashlazy bs :: Digest SHA1)
       out = root </> (T.unpack $ decodeUtf8 sha)
   liftIO $ createDirectoryIfMissing True root
+  p <- liftIO $ getPermissions f
+  liftIO . setPermissions f $ setOwnerExecutable True p
   liftIO $ renameFile f out
-  p <- liftIO $ getPermissions out
-  liftIO . setPermissions out $ setOwnerExecutable True p
   pure out
 
 exec :: FilePath -> MasterJobParams -> IO a
