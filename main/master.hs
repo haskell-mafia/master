@@ -14,7 +14,8 @@ import           P
 import           System.Directory
 import           System.FilePath
 import           System.Environment
-import           System.Exit (exitSuccess)
+import           System.Exit (exitSuccess, exitFailure)
+import           System.Posix.Directory (changeWorkingDirectory)
 import           System.IO
 
 import           X.Control.Monad.Trans.Either (pattern EitherT)
@@ -22,7 +23,7 @@ import           X.Control.Monad.Trans.Either.Exit (orDie)
 import           X.Options.Applicative
 
 data Command =
-    BuildCommand (Maybe FilePath) (Maybe JobName)
+    BuildCommand (Maybe FilePath) (Maybe FilePath) (Maybe JobName)
   deriving (Eq, Show)
 
 main :: IO ()
@@ -35,7 +36,12 @@ main = do
   dispatch (safeCommand commandP) >>= \sc -> case sc of
     VersionCommand ->
       (putStrLn $ "master: " <> buildInfoVersion) >> exitSuccess
-    RunCommand rt (BuildCommand mf mjn) -> do
+    RunCommand rt (BuildCommand dir mf mjn) -> do
+      for_ dir $ \d -> do
+        unlessM (doesDirectoryExist d) $ do
+          hPutStrLn stderr "Specified directory does not exist, can not change working directory."
+          exitFailure
+        changeWorkingDirectory d
       MasterConfig mr mp <- orDie masterLoadErrorRender . EitherT $ loadMasterConfig mf mjn
       case rt of
         DryRun ->
@@ -51,7 +57,7 @@ buildP :: Mod CommandFields Command
 buildP =
   command' "build"
            "Build project"
-           (BuildCommand <$> fileP <*> jobP)
+           (BuildCommand <$> dirP <*> fileP <*> jobP)
 
 jobP :: Parser (Maybe JobName)
 jobP = optional $ (JobName . T.pack) <$> (strArgument $
@@ -64,3 +70,10 @@ fileP = optional . strOption $
   <> short 'f'
   <> long "file"
   <> help "An optional path to a master file, otherwise defaults to 'master.toml'"
+
+dirP :: Parser (Maybe FilePath)
+dirP = optional . strOption $
+     metavar "WORKING_DIRECTORY"
+  <> short 'C'
+  <> long "directory"
+  <> help "Change to specified directory before reading master file or executing build."
