@@ -58,7 +58,8 @@ getFile root mr = case mr of
     let f = root </> (T.unpack v)
     ifM (lift $ doesFileExist f) (validate f v *> pure f) $ download root add (Just v)
 
-  RunnerS3 add Nothing ->
+  RunnerS3 add Nothing -> do
+    liftIO $ hPutStrLn stderr "warning: using an S3 runner without checksum"
     download root add Nothing
 
 download :: FilePath -> Address -> Maybe Hash -> EitherT RunnerError IO FilePath
