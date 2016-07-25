@@ -53,26 +53,47 @@ getFile root mr = case mr of
 
   RunnerS3 add (Just v) -> do
     let f = root </> (T.unpack v)
-    ifM (lift $ doesFileExist f) (pure f) $ download root add
+    ifM (lift $ doesFileExist f) (validate f v *> pure f) $ download root add (Just v)
 
   RunnerS3 add Nothing ->
-    download root add
+    download root add Nothing
 
-download :: FilePath -> Address -> EitherT RunnerError IO FilePath
-download root addr = do
+download :: FilePath -> Address -> Maybe Hash -> EitherT RunnerError IO FilePath
+download root addr mhash = do
   env <- bimapEitherT AwsRegionError id discoverAWSEnv
   uuid <- liftIO nextRandom >>= return . toString
   let f = root </> "master" <.> uuid
   runAWST env (AwsError addr) . firstEitherT (DownloadError addr) $
     S3.download addr f
-  bs <- liftIO $ LBS.readFile f
-  let sha = H.digestToHexByteString $ (H.hashlazy bs :: Digest SHA1)
-      out = root </> (T.unpack $ decodeUtf8 sha)
+  install root f mhash
+
+install :: FilePath -> FilePath -> Maybe Hash -> EitherT RunnerError IO FilePath
+install root f Nothing = do
+  sha <- liftIO (checksum f)
+  relocate root f sha
+install root f (Just v) = do
+  validate f v
+  relocate root f v
+
+-- Move into the cache according to hash and chmod. Does not check the hash.
+relocate :: FilePath -> FilePath -> Hash -> EitherT RunnerError IO FilePath
+relocate root f sha = do
+  let out = root </> (T.unpack sha)
   liftIO $ createDirectoryIfMissing True root
   p <- liftIO $ getPermissions f
   liftIO . setPermissions f $ setOwnerExecutable True p
   liftIO $ renameFile f out
   pure out
+
+validate :: FilePath -> Hash -> EitherT RunnerError IO ()
+validate f h = do
+  sha <- liftIO $ checksum f
+  if sha == h then pure () else left (BadChecksum h sha)
+
+checksum :: FilePath -> IO Hash
+checksum f = do
+  bs <- LBS.readFile f
+  pure (decodeUtf8 . H.digestToHexByteString $ (H.hashlazy bs :: Digest SHA1))
 
 exec :: FilePath -> MasterJobParams -> IO a
 exec cmd m = do
@@ -85,6 +106,7 @@ data RunnerError =
   | AwsError Address Error
   | DownloadError Address DownloadError
   | AwsRegionError RegionError
+  | BadChecksum Hash Hash
   deriving (Show)
 
 renderRunnerError :: RunnerError -> Text
@@ -97,3 +119,5 @@ renderRunnerError r = case r of
     "Downloading runner [" <> S3.addressToText a <> "] failed - " <> S3.renderDownloadError e
   AwsRegionError e ->
     "Failed to retrieve environment: " <> renderRegionError e
+  BadChecksum e a ->
+    "Failed to validate checksum: expected " <> e <> ", got " <> a

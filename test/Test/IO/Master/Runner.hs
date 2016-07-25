@@ -51,7 +51,7 @@ prop_download = forAll (elements southpark) $ \s -> testAWS $ do
   d <- newFilePath
   a <- newAddress
   S3.writeOrFail a s
-  r <- liftIO . runEitherT $ download d a
+  r <- liftIO . runEitherT $ download d a Nothing
   z <- getValue r
   pure $ z === s
 
