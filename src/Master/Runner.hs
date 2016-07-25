@@ -8,6 +8,9 @@ module Master.Runner (
   , getFile
   , download
   , renderRunnerError
+  , checksum
+  , checksum'
+  , checksum''
   ) where
 
 import           Control.Monad.IO.Class
@@ -93,7 +96,15 @@ validate f h = do
 checksum :: FilePath -> IO Hash
 checksum f = do
   bs <- LBS.readFile f
-  pure (decodeUtf8 . H.digestToHexByteString $ (H.hashlazy bs :: Digest SHA1))
+  pure (checksum'' bs)
+
+checksum' :: Text -> Hash
+checksum' =
+  checksum'' . LBS.fromStrict . encodeUtf8
+
+checksum'' :: LBS.ByteString -> Hash
+checksum'' bs =
+  decodeUtf8 . H.digestToHexByteString $ (H.hashlazy bs :: Digest SHA1)
 
 exec :: FilePath -> MasterJobParams -> IO a
 exec cmd m = do
