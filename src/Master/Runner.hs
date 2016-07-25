@@ -23,7 +23,6 @@ import qualified Data.Text as T
 import           Data.UUID
 import           Data.UUID.V4
 
-
 import           Master.Data
 
 import           Mismi
@@ -51,12 +50,8 @@ getFile root mr = case mr of
   RunnerPath f ->
     ifM (lift $ doesFileExist f) (pure f) . left $ MissingFile f
 
-  RunnerS3 add (Just v) -> do
-    let f = root </> (T.unpack v)
-    ifM (lift $ doesFileExist f) (validate f v *> pure f) $ download root add (Just v)
-
-  RunnerS3 add Nothing ->
-    download root add Nothing
+  RunnerS3 add mhash ->
+    download root add mhash
 
 download :: FilePath -> Address -> Maybe Hash -> EitherT RunnerError IO FilePath
 download root addr mhash = do
@@ -75,7 +70,7 @@ install root f (Just v) = do
   validate f v
   relocate root f v
 
--- Move into the cache according to hash and chmod. Does not check the hash.
+-- Rename according to hash and chmod. Does not check the hash.
 relocate :: FilePath -> FilePath -> Hash -> EitherT RunnerError IO FilePath
 relocate root f sha = do
   let out = root </> (T.unpack sha)
