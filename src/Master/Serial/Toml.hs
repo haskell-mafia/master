@@ -34,6 +34,7 @@ import           Text.Toml.Types
 data MasterConfig' =
   MasterConfig' {
     masterRunner' :: Maybe MasterRunner
+  , masterGlobalParams :: MasterJobParams
   , masterJobs :: M.Map JobName MasterJob
   } deriving (Eq, Show)
 
@@ -57,10 +58,15 @@ data MasterFromError =
 
 
 masterJobSelect :: Maybe JobName -> MasterConfig' -> Maybe MasterConfig
-masterJobSelect mjn (MasterConfig' mr mjs) =
-  uncurry MasterConfig <$> maybe (flip (,) M.empty <$> mr) (\jn ->
-    (\(MasterJob mr' mj) -> flip (,) mj <$> (mr' <|> mr)) =<< M.lookup jn mjs
-    ) mjn
+masterJobSelect mjn (MasterConfig' mr globals mjs) =
+  case mjn of
+    Nothing -> do
+      runner <- mr
+      pure (MasterConfig runner globals)
+    Just jn -> do
+      job <- M.lookup jn mjs
+      runner <- masterJobRunner job <|> mr
+      pure (MasterConfig runner (M.union (masterJobParams job) globals)) -- left biased union, locals override
 
 loadMasterConfigToml :: FilePath -> Maybe JobName -> IO (Either MasterLoadError MasterConfig)
 loadMasterConfigToml fp jn = do
@@ -78,6 +84,7 @@ masterConfigFromToml t' = do
     Just (NTValue (VInteger 1)) ->
       MasterConfig'
         <$> masterRunnerFromToml m
+        <*> masterGlobalsFromToml t
         <*> masterJobsFromToml t
     Just (NTValue (VInteger v)) ->
       Left $ UnknownVersion v
@@ -107,6 +114,18 @@ masterRunnerFromToml t = do
     _ ->
       Left $ InvalidNodeType "runner"
 
+masterGlobalsFromToml :: Table -> Either MasterFromError MasterJobParams
+masterGlobalsFromToml t = do
+  case HM.lookupDefault (NTable HM.empty) "global" t of
+    NTable bt ->
+      fmap M.fromList . for (HM.toList bt) $ \(k, v) -> case v of
+        (NTValue (VString v')) ->
+          Right (k, v')
+        _ ->
+          Left $ InvalidNodeType k
+    _ ->
+      Left $ InvalidNodeType "global"
+
 masterJobsFromToml :: Table -> Either MasterFromError (M.Map JobName MasterJob)
 masterJobsFromToml t = do
   case HM.lookupDefault (NTable HM.empty) "build" t of
@@ -129,9 +148,10 @@ masterJobFromToml t = do
     _ -> Left $ InvalidNodeType k
 
 masterConfigToToml :: MasterConfig' -> Table
-masterConfigToToml (MasterConfig' r j) =
+masterConfigToToml (MasterConfig' r g j) =
   (HM.singleton masterKey . NTable . (versionTable <>) . maybe HM.empty masterRunnerToToml) r <>
-    HM.singleton "build" (NTable . HM.fromList . fmap (bimap jobName (NTable . masterJobToToml)) . M.toList $ j)
+    (HM.singleton "global" (NTable . HM.fromList . fmap (second vstring) $ M.toList g)) <>
+    (HM.singleton "build" (NTable . HM.fromList . fmap (bimap jobName (NTable . masterJobToToml)) . M.toList $ j))
 
 masterRunnerToToml :: MasterRunner -> Table
 masterRunnerToToml = HM.fromList . \case
@@ -139,8 +159,6 @@ masterRunnerToToml = HM.fromList . \case
     pure ("runner", vstring $ T.pack v)
   RunnerS3 a h ->
     ("runner", vstring $ addressToText a) : (maybeToList . fmap ((,) "sha1" . vstring)) h
-  where
-    vstring = NTValue . VString
 
 versionTable :: Table
 versionTable = HM.singleton "version" . NTValue $ VInteger currentVersion
@@ -149,8 +167,9 @@ masterJobToToml :: MasterJob -> Table
 masterJobToToml (MasterJob r p) =
      maybe HM.empty (HM.singleton masterKey . NTable . masterRunnerToToml) r
   <> (HM.fromList . fmap (second vstring) . M.toList) p
-  where
-    vstring = NTValue . VString
+
+vstring :: Text -> Node
+vstring = NTValue . VString
 
 masterLoadErrorRender :: MasterLoadError -> Text
 masterLoadErrorRender = \case
