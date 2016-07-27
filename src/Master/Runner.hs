@@ -92,7 +92,7 @@ relocate root f sha = do
 validate :: FilePath -> Hash -> EitherT RunnerError IO ()
 validate f h = do
   sha <- liftIO $ checksum f
-  if sha == h then pure () else left (BadChecksum h sha)
+  unless (sha == h) (left (BadChecksum h sha))
 
 checksum :: FilePath -> IO Hash
 checksum f = do
