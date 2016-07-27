@@ -8,9 +8,9 @@ module Master.Runner (
   , getFile
   , download
   , renderRunnerError
-  , checksum
-  , checksum'
-  , checksum''
+  , hashFile
+  , hashText
+  , hashLBS
   ) where
 
 import           Control.Monad.IO.Class
@@ -59,7 +59,7 @@ getFile root mr = case mr of
     ifM (lift $ doesFileExist f) (validate f v *> pure f) $ download root add (Just v)
 
   RunnerS3 add Nothing -> do
-    liftIO $ hPutStrLn stderr "warning: using an S3 runner without checksum"
+    liftIO $ hPutStrLn stderr "warning: using an S3 runner without a hash"
     download root add Nothing
 
 download :: FilePath -> Address -> Maybe Hash -> EitherT RunnerError IO FilePath
@@ -73,7 +73,7 @@ download root addr mhash = do
 
 install :: FilePath -> FilePath -> Maybe Hash -> EitherT RunnerError IO FilePath
 install root f Nothing = do
-  sha <- liftIO (checksum f)
+  sha <- liftIO (hashFile f)
   relocate root f sha
 install root f (Just v) = do
   validate f v
@@ -91,20 +91,20 @@ relocate root f sha = do
 
 validate :: FilePath -> Hash -> EitherT RunnerError IO ()
 validate f h = do
-  sha <- liftIO $ checksum f
-  unless (sha == h) (left (BadChecksum h sha))
+  sha <- liftIO $ hashFile f
+  unless (sha == h) (left (BadHash h sha))
 
-checksum :: FilePath -> IO Hash
-checksum f = do
+hashFile :: FilePath -> IO Hash
+hashFile f = do
   bs <- LBS.readFile f
-  pure (checksum'' bs)
+  pure (hashLBS bs)
 
-checksum' :: Text -> Hash
-checksum' =
-  checksum'' . LBS.fromStrict . encodeUtf8
+hashText :: Text -> Hash
+hashText =
+  hashLBS . LBS.fromStrict . encodeUtf8
 
-checksum'' :: LBS.ByteString -> Hash
-checksum'' bs =
+hashLBS :: LBS.ByteString -> Hash
+hashLBS bs =
   decodeUtf8 . H.digestToHexByteString $ (H.hashlazy bs :: Digest SHA1)
 
 exec :: FilePath -> MasterJobParams -> IO a
@@ -118,7 +118,7 @@ data RunnerError =
   | AwsError Address Error
   | DownloadError Address DownloadError
   | AwsRegionError RegionError
-  | BadChecksum Hash Hash
+  | BadHash Hash Hash
   deriving (Show)
 
 renderRunnerError :: RunnerError -> Text
@@ -131,5 +131,5 @@ renderRunnerError r = case r of
     "Downloading runner [" <> S3.addressToText a <> "] failed - " <> S3.renderDownloadError e
   AwsRegionError e ->
     "Failed to retrieve environment: " <> renderRegionError e
-  BadChecksum e a ->
-    "Failed to validate checksum: expected " <> e <> ", got " <> a
+  BadHash e a ->
+    "Failed to validate hash: expected " <> e <> ", got " <> a

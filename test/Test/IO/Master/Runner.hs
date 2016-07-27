@@ -60,14 +60,14 @@ prop_download_good_hash = forAll (elements southpark) $ \s -> testAWS $ do
   d <- newFilePath
   a <- newAddress
   S3.writeOrFail a s
-  let sha = checksum' s
+  let sha = hashText s
   r <- liftIO . runEitherT $ download d a (Just sha)
   z <- getValue r
   pure $ z === s
 
 prop_download_bad_hash =
   forAll (elements southpark) $ \s ->
-    forAll (arbitrary `suchThat` (/= (checksum' s))) $ \sha -> (neg . testAWS) $ do
+    forAll (arbitrary `suchThat` (/= (hashText s))) $ \sha -> (neg . testAWS) $ do
       d <- newFilePath
       a <- newAddress
       S3.writeOrFail a s
