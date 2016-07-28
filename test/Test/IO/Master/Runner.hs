@@ -9,6 +9,7 @@ import           Control.Monad.IO.Class
 
 import           Data.Text as T
 
+import           Disorder.Core
 import           Disorder.Core.IO
 import           Disorder.Corpus
 
@@ -47,13 +48,32 @@ prop_get_file_s3_no_hash = forAll (elements weather) $ \s -> testAWS $ do
   z <- getValue r
   pure $ z === s
 
-prop_download = forAll (elements southpark) $ \s -> testAWS $ do
+prop_download_no_hash = forAll (elements southpark) $ \s -> testAWS $ do
   d <- newFilePath
   a <- newAddress
   S3.writeOrFail a s
-  r <- liftIO . runEitherT $ download d a
+  r <- liftIO . runEitherT $ download d a Nothing
   z <- getValue r
   pure $ z === s
+
+prop_download_good_hash = forAll (elements southpark) $ \s -> testAWS $ do
+  d <- newFilePath
+  a <- newAddress
+  S3.writeOrFail a s
+  let sha = hashText s
+  r <- liftIO . runEitherT $ download d a (Just sha)
+  z <- getValue r
+  pure $ z === s
+
+prop_download_bad_hash =
+  forAll (elements southpark) $ \s ->
+    forAll (arbitrary `suchThat` (/= (hashText s))) $ \sha -> (neg . testAWS) $ do
+      d <- newFilePath
+      a <- newAddress
+      S3.writeOrFail a s
+      r <- liftIO . runEitherT $ download d a (Just sha)
+      z <- getValue r
+      pure $ z === s
 
 getFilePath  :: Monad m => Either RunnerError a -> m a
 getFilePath r = case r of

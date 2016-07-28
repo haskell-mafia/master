@@ -99,10 +99,10 @@ masterRunnerFromToml t = do
         Nothing ->
           pure . RunnerPath $ T.unpack v
         Just a -> do
-          h <- case HM.lookup "sha" $ t of
+          h <- case HM.lookup "sha1" $ t of
             Nothing -> pure Nothing
             Just (NTValue (VString s)) -> pure $ Just s
-            Just _ -> Left $ InvalidNodeType "sha"
+            Just _ -> Left $ InvalidNodeType "sha1"
           pure $ RunnerS3 a h
     _ ->
       Left $ InvalidNodeType "runner"
@@ -138,7 +138,7 @@ masterRunnerToToml = HM.fromList . \case
   RunnerPath v ->
     pure ("runner", vstring $ T.pack v)
   RunnerS3 a h ->
-    ("runner", vstring $ addressToText a) : (maybeToList . fmap ((,) "sha" . vstring)) h
+    ("runner", vstring $ addressToText a) : (maybeToList . fmap ((,) "sha1" . vstring)) h
   where
     vstring = NTValue . VString
 
