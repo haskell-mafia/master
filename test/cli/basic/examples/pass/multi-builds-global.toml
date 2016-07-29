@@ -1,0 +1,16 @@
+[master]
+  version = 1
+  runner = "path/to/runner"
+
+[global]
+  PUBLISH = "false"
+
+[build.one]
+  PUBLISH = "true"
+
+[build.two]
+  PUBLISH = "false"
+
+[build.four]
+  [build.three.master]
+    runner = "path/to/runner"
