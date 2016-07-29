@@ -28,8 +28,10 @@ instance Arbitrary MasterConfig' where
         MasterConfig'
           <$> pure (Just r)
           <*> arbitrary
+          <*> arbitrary
       , MasterConfig'
           <$> pure Nothing
+          <*> arbitrary
           <*> (fmap M.fromList $ listOf1 (fmap (\(MasterJob r' p) -> MasterJob (Just $ fromMaybe r r') p) <$> arbitrary))
       ]
 
