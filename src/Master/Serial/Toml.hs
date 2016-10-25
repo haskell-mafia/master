@@ -50,25 +50,20 @@ data MasterLoadError =
   deriving (Eq, Show)
 
 data MasterFromError =
-    MissingJob (Maybe JobName)
+    MissingJob JobName
   | InvalidNodeType Text
   | UnknownVersion Int64
   | MissingVersion
   deriving (Eq, Show)
 
 
-masterJobSelect :: Maybe JobName -> MasterConfig' -> Maybe MasterConfig
-masterJobSelect mjn (MasterConfig' mr globals mjs) =
-  case mjn of
-    Nothing -> do
-      runner <- mr
-      pure (MasterConfig runner globals)
-    Just jn -> do
-      job <- M.lookup jn mjs
-      runner <- masterJobRunner job <|> mr
-      pure (MasterConfig runner (M.union (masterJobParams job) globals)) -- left biased union, locals override
+masterJobSelect :: JobName -> MasterConfig' -> Maybe MasterConfig
+masterJobSelect jn (MasterConfig' mr globals mjs) = do
+  job <- M.lookup jn mjs
+  runner <- masterJobRunner job <|> mr
+  pure (MasterConfig runner (M.union (masterJobParams job) globals)) -- left biased union, locals override
 
-loadMasterConfigToml :: FilePath -> Maybe JobName -> IO (Either MasterLoadError MasterConfig)
+loadMasterConfigToml :: FilePath -> JobName -> IO (Either MasterLoadError MasterConfig)
 loadMasterConfigToml fp jn = do
   t <- T.readFile fp
   case parseTomlDoc fp t of
@@ -182,8 +177,7 @@ masterLoadErrorRender = \case
 
 masterFromErrorRender :: MasterFromError -> Text
 masterFromErrorRender = \case
-  MissingJob Nothing -> "Master build not specified and no default found"
-  MissingJob (Just m) -> "Master build '" <> jobName m <> "' not found"
+  MissingJob m -> "Master build '" <> jobName m <> "' not found"
   InvalidNodeType t -> "The TOML type of '"  <> t <> "' is invalid, must be a string"
   UnknownVersion v -> "The master.version '" <> (T.pack . show) v <> "' is not supported'"
   MissingVersion -> "The master.version attribute is mandatory - the latest version is '" <> (T.pack . show) currentVersion <> "'"

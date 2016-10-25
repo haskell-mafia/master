@@ -60,15 +60,11 @@ masterJobParamsRender :: MasterJobParams -> Text
 masterJobParamsRender =
   T.intercalate "," . fmap (\(a, b) -> a <> "=" <> b) . M.toList
 
-globalJobParams :: Maybe JobName -> MasterJobParams -> MasterJobParams
-globalJobParams mjn jobparams =
+globalJobParams :: JobName -> MasterJobParams -> MasterJobParams
+globalJobParams jn jobparams =
   let
-    globals = M.fromList $ mconcat [
-        case mjn of
-          Nothing ->
-            []
-          Just jn ->
-            [("MASTER_BUILD", jobName jn)]
+    globals = M.fromList $ [
+        ("MASTER_BUILD", jobName jn)
       ]
   in
     M.union jobparams globals
