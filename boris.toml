@@ -4,3 +4,12 @@
 [build.dist-7-10]
 
 [build.branches-7-10]
+
+[build.dist-validate]
+  command = [["validate-respect"]]
+
+[build.all-submodules]
+  command = [["dangling-refs"]]
+
+[build.all-rebased]
+  command = [["rebased"]]
