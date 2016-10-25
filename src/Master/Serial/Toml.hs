@@ -71,11 +71,12 @@ masterJobSelect mjn (MasterConfig' mr globals mjs) =
 loadMasterConfigToml :: FilePath -> Maybe JobName -> IO (Either MasterLoadError MasterConfig)
 loadMasterConfigToml fp jn = do
   t <- T.readFile fp
-  pure
-    . either
-      (Left . MasterParseError fp)
-      (first MasterFromError . (=<<) (maybeToRight (MissingJob jn) . masterJobSelect jn) . masterConfigFromToml)
-    $ parseTomlDoc fp t
+  case parseTomlDoc fp t of
+    Left e ->
+      pure . Left $ MasterParseError fp e
+    Right v -> pure . first MasterFromError $ do
+      x <- masterConfigFromToml v
+      maybeToRight (MissingJob jn) $ masterJobSelect jn x
 
 masterConfigFromToml :: Table -> Either MasterFromError MasterConfig'
 masterConfigFromToml t' = do
@@ -107,9 +108,12 @@ masterRunnerFromToml t = do
           pure . RunnerPath $ T.unpack v
         Just a -> do
           h <- case HM.lookup "sha1" $ t of
-            Nothing -> pure Nothing
-            Just (NTValue (VString s)) -> pure $ Just s
-            Just _ -> Left $ InvalidNodeType "sha1"
+            Nothing ->
+              pure Nothing
+            Just (NTValue (VString s)) ->
+              pure . Just $ Hash s
+            Just _ ->
+              Left $ InvalidNodeType "sha1"
           pure $ RunnerS3 a h
     _ ->
       Left $ InvalidNodeType "runner"
@@ -158,7 +162,7 @@ masterRunnerToToml = HM.fromList . \case
   RunnerPath v ->
     pure ("runner", vstring $ T.pack v)
   RunnerS3 a h ->
-    ("runner", vstring $ addressToText a) : (maybeToList . fmap ((,) "sha1" . vstring)) h
+    ("runner", vstring $ addressToText a) : (maybeToList . fmap ((,) "sha1" . vstring . renderHash)) h
 
 versionTable :: Table
 versionTable = HM.singleton "version" . NTValue $ VInteger currentVersion

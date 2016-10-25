@@ -55,7 +55,7 @@ getFile root mr = case mr of
     ifM (lift $ doesFileExist f) (pure f) . left $ MissingFile f
 
   RunnerS3 add (Just v) -> do
-    let f = root </> (T.unpack v)
+    let f = root </> (T.unpack $ renderHash v)
     ifM (lift $ doesFileExist f) (validate f v *> pure f) $ download root add (Just v)
 
   RunnerS3 add Nothing -> do
@@ -82,7 +82,7 @@ install root f (Just v) = do
 -- Move into the cache according to hash and chmod. Does not check the hash.
 relocate :: FilePath -> FilePath -> Hash -> EitherT RunnerError IO FilePath
 relocate root f sha = do
-  let out = root </> (T.unpack sha)
+  let out = root </> (T.unpack $ renderHash sha)
   liftIO $ createDirectoryIfMissing True root
   p <- liftIO $ getPermissions f
   liftIO . setPermissions f $ setOwnerExecutable True p
@@ -105,7 +105,7 @@ hashText =
 
 hashLBS :: LBS.ByteString -> Hash
 hashLBS bs =
-  decodeUtf8 . H.digestToHexByteString $ (H.hashlazy bs :: Digest SHA1)
+  Hash . decodeUtf8 . H.digestToHexByteString $ (H.hashlazy bs :: Digest SHA1)
 
 exec :: FilePath -> MasterJobParams -> IO a
 exec cmd m = do
@@ -132,4 +132,4 @@ renderRunnerError r = case r of
   AwsRegionError e ->
     "Failed to retrieve environment: " <> renderRegionError e
   BadHash e a ->
-    "Failed to validate hash: expected " <> e <> ", got " <> a
+    "Failed to validate hash: expected " <> renderHash e <> ", got " <> renderHash a

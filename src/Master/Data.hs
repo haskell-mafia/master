@@ -7,9 +7,10 @@ module Master.Data (
   , MasterExecutable (..)
   , JobName (..)
   , MasterJobParams
-  , Hash
+  , Hash (..)
   , masterRunnerRender
   , masterJobParamsRender
+  , globalJobParams
   ) where
 
 import           Data.Map as M
@@ -38,7 +39,11 @@ data MasterConfig =
   } deriving (Eq, Show)
 
 type MasterJobParams = Map Text Text
-type Hash = Text
+
+newtype Hash =
+  Hash {
+    renderHash :: Text
+  } deriving (Eq, Show)
 
 data MasterRunner =
     RunnerS3 Address (Maybe Hash)
@@ -54,3 +59,16 @@ masterRunnerRender = \case
 masterJobParamsRender :: MasterJobParams -> Text
 masterJobParamsRender =
   T.intercalate "," . fmap (\(a, b) -> a <> "=" <> b) . M.toList
+
+globalJobParams :: Maybe JobName -> MasterJobParams -> MasterJobParams
+globalJobParams mjn jobparams =
+  let
+    globals = M.fromList $ mconcat [
+        case mjn of
+          Nothing ->
+            []
+          Just jn ->
+            [("MASTER_BUILD", jobName jn)]
+      ]
+  in
+    M.union jobparams globals
