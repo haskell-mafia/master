@@ -23,7 +23,7 @@ import           X.Control.Monad.Trans.Either.Exit (orDie)
 import           X.Options.Applicative
 
 data Command =
-    BuildCommand (Maybe FilePath) (Maybe FilePath) (Maybe JobName)
+    BuildCommand (Maybe FilePath) (Maybe FilePath) JobName
   deriving (Eq, Show)
 
 main :: IO ()
@@ -36,13 +36,13 @@ main = do
   dispatch (safeCommand commandP) >>= \sc -> case sc of
     VersionCommand ->
       (putStrLn $ "master: " <> buildInfoVersion) >> exitSuccess
-    RunCommand rt (BuildCommand dir mf mjn) -> do
+    RunCommand rt (BuildCommand dir mf jn) -> do
       for_ dir $ \d -> do
         unlessM (doesDirectoryExist d) $ do
           hPutStrLn stderr "Specified directory does not exist, can not change working directory."
           exitFailure
         changeWorkingDirectory d
-      MasterConfig mr mp <- orDie masterLoadErrorRender . EitherT $ loadMasterConfig mf mjn
+      MasterConfig mr mp <- orDie masterLoadErrorRender . EitherT $ loadMasterConfig mf jn
       case rt of
         DryRun ->
           putStrLn . T.unpack
@@ -59,8 +59,8 @@ buildP =
            "Build project"
            (BuildCommand <$> dirP <*> fileP <*> jobP)
 
-jobP :: Parser (Maybe JobName)
-jobP = optional $ (JobName . T.pack) <$> (strArgument $
+jobP :: Parser JobName
+jobP = (JobName . T.pack) <$> (strArgument $
      metavar "JOB"
   <> help "Job name.")
 
