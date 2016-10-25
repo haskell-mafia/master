@@ -48,3 +48,6 @@ instance Arbitrary MasterRunner where
       RunnerPath <$> arbitrary
     , RunnerS3 <$> arbitrary <*> arbitrary
     ]
+
+instance Arbitrary Hash where
+  arbitrary = Hash <$> arbitrary

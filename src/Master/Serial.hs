@@ -12,7 +12,7 @@ import           P
 
 import           System.IO
 
-
 loadMasterConfig :: Maybe FilePath -> Maybe JobName -> IO (Either MasterLoadError MasterConfig)
-loadMasterConfig fp =
-  loadMasterConfigToml (fromMaybe "master.toml" fp)
+loadMasterConfig fp jn =
+  flip (fmap . fmap) (loadMasterConfigToml (fromMaybe "master.toml" fp) jn) $ \(MasterConfig r c) ->
+    MasterConfig r $ globalJobParams jn c

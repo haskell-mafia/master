@@ -22,6 +22,7 @@ import           System.IO
 import           System.IO.Temp
 import qualified System.FilePath as F
 
+import           Test.Master.Arbitrary ()
 import           Test.Mismi (testAWS)
 import           Test.Mismi.S3 (newFilePath, newAddress)
 import           Test.QuickCheck

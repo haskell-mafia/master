@@ -1,0 +1,8 @@
+#!/bin/sh -eux
+
+MASTER=${1:-./dist/build/master/master}
+DIR=$(dirname $0)
+
+$MASTER build run -C $DIR
+
+! $MASTER build -C $DIR
