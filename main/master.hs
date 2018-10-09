@@ -36,6 +36,9 @@ main = do
   dispatch (safeCommand commandP) >>= \sc -> case sc of
     VersionCommand ->
       (putStrLn $ "master: " <> buildInfoVersion) >> exitSuccess
+    DependencyCommand ->
+      -- TODO make this meaningful
+      mapM putStrLn [[]] >> exitSuccess
     RunCommand rt (BuildCommand dir mf jn) -> do
       for_ dir $ \d -> do
         unlessM (doesDirectoryExist d) $ do
